@@ -1,0 +1,10 @@
+*.o
+*.a
+*.so
+*~
+.#*
+*.test
+*.swp
+.DS_Store
+
+/build-cache
