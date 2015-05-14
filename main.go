@@ -21,6 +21,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"hash"
 	"io"
 	"log"
@@ -32,6 +33,8 @@ import (
 	"strings"
 	"time"
 )
+
+var raceF = flag.Bool("race", false, "")
 
 type packageList []*Package
 
@@ -144,11 +147,16 @@ func (p *Package) Fingerprint(pkgs map[string]*Package) string {
 	}
 
 	h := sha1.New()
+	// TODO(pmattis): I need to add the output of "go version", not the
+	// version/GOOS/GOARCH that build-cache was compiled with.
 	p.addFlags(h, []string{
 		runtime.Version(),
 		runtime.GOOS,
 		runtime.GOARCH,
 		p.ImportPath})
+	if *raceF {
+		p.addFlags(h, []string{"race"})
+	}
 	p.addFiles(h, p.GoFiles)
 	p.addFiles(h, p.CgoFiles)
 	p.addFiles(h, p.CFiles)
@@ -196,7 +204,12 @@ func prettyJSON(v interface{}) string {
 }
 
 func goList(dir string) (*Package, error) {
-	c := exec.Command("go", "list", "-json", dir)
+	args := []string{"list", "-json"}
+	if *raceF {
+		args = append(args, "-installsuffix=race")
+	}
+	args = append(args, dir)
+	c := exec.Command("go", args...)
 	output, err := c.CombinedOutput()
 	if err != nil {
 		log.Fatalf("%s\n%s", err, output)
@@ -360,19 +373,22 @@ func clear(args []string) {
 func main() {
 	log.SetFlags(0)
 
-	if len(os.Args) >= 2 {
-		switch os.Args[1] {
+	flag.Parse()
+	args := flag.Args()
+
+	if len(args) >= 1 {
+		switch args[0] {
 		case "save":
-			save(os.Args[2:])
+			save(args[1:])
 			return
 		case "restore":
-			restore(os.Args[2:])
+			restore(args[1:])
 			return
 		case "clear":
-			clear(os.Args[2:])
+			clear(args[1:])
 			return
 		}
-		log.Printf("unknown command \"%s\"\n\n", os.Args[1])
+		log.Printf("unknown command \"%s\"\n\n", args[0])
 	}
 
 	log.Printf("usage: %s [save|restore|clear]", os.Args[0])
