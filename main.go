@@ -367,7 +367,7 @@ func restore(args []string) {
 		fp := pkg.Fingerprint(pkgMap)
 		src := filepath.Join(dir, fp)
 		if !exists(src) {
-			log.Printf("%-40s  %s (%s/%s)", "-", pkg.ImportPath, fp, pkg.Target)
+			log.Printf("%-40s  %s (%s:%s)", "-", pkg.ImportPath, fp, pkg.Target)
 		} else {
 			log.Printf("%-40s  %s (%s)", fp, pkg.ImportPath, pkg.Target)
 			_ = os.Remove(pkg.Target)
