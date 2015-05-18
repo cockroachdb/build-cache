@@ -260,11 +260,20 @@ func linkOrCopy(src, dst string) error {
 	}
 	defer srcFile.Close()
 
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
 	defer dstFile.Close()
+	if err := dstFile.Chmod(srcInfo.Mode() & os.ModePerm); err != nil {
+		_ = os.Remove(dst)
+		return err
+	}
 	_, err = io.Copy(dstFile, srcFile)
 	return err
 }
