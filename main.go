@@ -206,6 +206,7 @@ func prettyJSON(v interface{}) string {
 func goList(dir string) (*Package, error) {
 	args := []string{"list", "-json"}
 	if *raceF {
+		args = append(args, "-race")
 		args = append(args, "-installsuffix=race")
 	}
 	args = append(args, dir)
