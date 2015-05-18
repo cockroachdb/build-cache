@@ -246,6 +246,26 @@ func cacheDir() string {
 	return d
 }
 
+func linkOrCopy(src, dst string) error {
+	if err := os.Link(src, dst); err == nil {
+		return nil
+	}
+
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+	_, err = io.Copy(dstFile, srcFile)
+	return err
+}
+
 func loadPackages(pkgs map[string]*Package, importPath string) *Package {
 	if pkg := pkgs[importPath]; pkg != nil {
 		return pkg
@@ -314,7 +334,7 @@ func save(args []string) {
 		} else {
 			fp := pkg.Fingerprint(pkgMap)
 			tag := "*"
-			if err := os.Link(pkg.Target, filepath.Join(dir, fp)); err != nil {
+			if err := linkOrCopy(pkg.Target, filepath.Join(dir, fp)); err != nil {
 				if !os.IsExist(err) {
 					log.Fatal(err)
 				}
@@ -352,7 +372,7 @@ func restore(args []string) {
 			log.Printf("%-40s  %s", fp, pkg.ImportPath)
 			_ = os.Remove(pkg.Target)
 			_ = os.MkdirAll(filepath.Dir(pkg.Target), 0755)
-			if err := os.Link(src, pkg.Target); err != nil {
+			if err := linkOrCopy(src, pkg.Target); err != nil {
 				log.Fatal(err)
 			}
 			if err := os.Chtimes(pkg.Target, now, now); err != nil {
