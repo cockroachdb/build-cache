@@ -247,7 +247,10 @@ func cacheDir() string {
 }
 
 func linkOrCopy(src, dst string) error {
-	if err := os.Link(src, dst); err == nil {
+	if exists(dst) {
+		return nil
+	}
+	if err := os.Link(src, dst); err == nil || os.IsExist(err) {
 		return nil
 	}
 
