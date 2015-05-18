@@ -173,7 +173,7 @@ func (p *Package) Fingerprint(pkgs map[string]*Package) string {
 	p.addFlags(h, p.CgoLDFLAGS)
 	p.addFlags(h, p.CgoPkgConfig)
 	for _, dep := range p.Deps {
-		if isStdLib(dep) {
+		if !*raceF && isStdLib(dep) {
 			continue
 		}
 		pkg, ok := pkgs[dep]
@@ -256,7 +256,7 @@ func loadPackages(pkgs map[string]*Package, importPath string) *Package {
 	}
 	pkgs[pkg.ImportPath] = pkg
 	for _, dep := range pkg.Deps {
-		if isStdLib(dep) {
+		if !*raceF && isStdLib(dep) {
 			continue
 		}
 		loadPackages(pkgs, dep)
@@ -277,7 +277,7 @@ func load(dir string) (map[string]*Package, []*Package) {
 	}
 	for _, pkg := range rootPkgs {
 		for _, dep := range pkg.TestImports {
-			if isStdLib(dep) {
+			if !*raceF && isStdLib(dep) {
 				continue
 			}
 			loadPackages(pkgMap, dep)
@@ -350,7 +350,8 @@ func restore(args []string) {
 			log.Printf("%-40s  %s", "-", pkg.ImportPath)
 		} else {
 			log.Printf("%-40s  %s", fp, pkg.ImportPath)
-			os.Remove(pkg.Target)
+			_ = os.Remove(pkg.Target)
+			_ = os.MkdirAll(filepath.Dir(pkg.Target), 0755)
 			if err := os.Link(src, pkg.Target); err != nil {
 				log.Fatal(err)
 			}
