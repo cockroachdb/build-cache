@@ -330,7 +330,7 @@ func save(args []string) {
 	pkgMap, pkgList := load(path)
 	for _, pkg := range pkgList {
 		if pkg.Stale || !exists(pkg.Target) {
-			log.Printf("%-40s  %s", "-", pkg.ImportPath)
+			log.Printf("%-40s  %s (%s)", "-", pkg.ImportPath, pkg.Target)
 		} else {
 			fp := pkg.Fingerprint(pkgMap)
 			tag := "*"
@@ -340,7 +340,7 @@ func save(args []string) {
 				}
 				tag = " "
 			}
-			log.Printf("%-40s %s%s", fp, tag, pkg.ImportPath)
+			log.Printf("%-40s %s%s (%s)", fp, tag, pkg.ImportPath, pkg.Target)
 		}
 	}
 }
@@ -367,9 +367,9 @@ func restore(args []string) {
 		fp := pkg.Fingerprint(pkgMap)
 		src := filepath.Join(dir, fp)
 		if !exists(src) {
-			log.Printf("%-40s  %s", "-", pkg.ImportPath)
+			log.Printf("%-40s  %s (%s/%s)", "-", pkg.ImportPath, fp, pkg.Target)
 		} else {
-			log.Printf("%-40s  %s", fp, pkg.ImportPath)
+			log.Printf("%-40s  %s (%s)", fp, pkg.ImportPath, pkg.Target)
 			_ = os.Remove(pkg.Target)
 			_ = os.MkdirAll(filepath.Dir(pkg.Target), 0755)
 			if err := linkOrCopy(src, pkg.Target); err != nil {
