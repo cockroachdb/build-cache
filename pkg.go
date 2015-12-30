@@ -333,8 +333,13 @@ func (p *Package) load(buildContext *build.Context, stk *importStack, bp *build.
 	}
 	// Everything depends on runtime, except runtime, its internal
 	// subpackages, and unsafe.
-	if !p.Standard || (p.ImportPath != "runtime" && !strings.HasPrefix(p.ImportPath, "runtime/internal/") && p.ImportPath != "unsafe") {
+	if !p.Standard || (p.baseImportPath != "runtime" && !strings.HasPrefix(p.ImportPath, "runtime/internal/") && p.ImportPath != "unsafe") {
 		importPaths = append(importPaths, "runtime")
+		// When race detection enabled everything depends on runtime/race.
+		// Exclude certain packages to avoid circular dependencies.
+		if p.race && (!p.Standard || !raceExclude[p.baseImportPath]) {
+			importPaths = append(importPaths, "runtime/race")
+		}
 	}
 
 	// Build list of imported packages and full dependency list.
