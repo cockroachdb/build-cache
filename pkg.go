@@ -263,6 +263,7 @@ func expandScanner(err error) error {
 
 var raceExclude = map[string]bool{
 	"runtime/race": true,
+	"runtime/msan": true,
 	"runtime/cgo":  true,
 	"cmd/cgo":      true,
 	"syscall":      true,
@@ -275,6 +276,7 @@ var cgoExclude = map[string]bool{
 
 var cgoSyscallExclude = map[string]bool{
 	"runtime/cgo":  true,
+	"runtime/msan": true,
 	"runtime/race": true,
 }
 
@@ -329,14 +331,10 @@ func (p *Package) load(buildContext *build.Context, stk *importStack, bp *build.
 	if len(p.CgoFiles) > 0 && (!p.Standard || !cgoSyscallExclude[p.baseImportPath]) {
 		importPaths = append(importPaths, "syscall")
 	}
-	// Everything depends on runtime, except runtime and unsafe.
-	if !p.Standard || (p.baseImportPath != "runtime" && p.baseImportPath != "unsafe") {
+	// Everything depends on runtime, except runtime, its internal
+	// subpackages, and unsafe.
+	if !p.Standard || (p.ImportPath != "runtime" && !strings.HasPrefix(p.ImportPath, "runtime/internal/") && p.ImportPath != "unsafe") {
 		importPaths = append(importPaths, "runtime")
-		// When race detection enabled everything depends on runtime/race.
-		// Exclude certain packages to avoid circular dependencies.
-		if p.race && (!p.Standard || !raceExclude[p.baseImportPath]) {
-			importPaths = append(importPaths, "runtime/race")
-		}
 	}
 
 	// Build list of imported packages and full dependency list.
